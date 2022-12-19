@@ -1,0 +1,141 @@
+#!/bin/bash
+set -e
+HASH="$(openssl passwd -apr1 $HTTP_PASSWORD)"
+echo "$APP_NAME:$HASH" > $(pwd)/nginx/configs/.htpasswd
+mkdir -p ./nginx/configs/conf.d/
+
+if [ "$DOCKER_ENV" != prod ] && [ "$DOCKER_ENV" != local ]
+    then
+	basic_auth_front='auth_basic "Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;'
+fi
+
+
+cat <<EOF > ./nginx/configs/conf.d/server.conf
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${WEB_SERVER_NAME};
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For  \$proxy_add_x_forwarded_for;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+	  add_header Strict-Transport-Security max-age=15768000;
+    root /var/www/${APP_NAME}-dashboard/build;
+    index index.html index.htm index.js index.tsx;
+    location / {
+        $basic_auth_front
+        try_files \$uri /index.html\$is_args\$args;
+    }
+
+    location = /robots.txt {
+        add_header Content-Type text/plain;
+        return 200 "User-agent: *\nDisallow: /\n";
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${API_SERVER_ADDRESS};
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For  \$proxy_add_x_forwarded_for;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+	  add_header Strict-Transport-Security max-age=15768000;
+
+    location / {
+        set \$origin ${DASHBOARD_URL};
+        if (\$http_origin = '${DASHBOARD_URL}') {
+            set \$origin \$http_origin;
+        }
+        if (\$http_origin = 'http://localhost:3000') {
+            set \$origin \$http_origin;
+        }
+        if (\$request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' \$origin;
+            #
+            # Om nom nom cookies
+            #
+            add_header 'Access-Control-Allow-Credentials' 'true';
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+            #
+            # Custom headers and headers various browsers *should* be OK with but aren't
+            #
+            add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type';
+            #
+            # Tell client that this pre-flight info is valid for 20 days
+            #
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+        proxy_pass http://${API_SERVER_NAME}:${PORT};
+    }
+
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${ADMINER_SERVER_ADDRESS};
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For  \$proxy_add_x_forwarded_for;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+	  add_header Strict-Transport-Security max-age=15768000;
+
+    location / {
+        $basic_auth_front
+        proxy_pass http://adminer:8080;
+    }
+}
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name ${CHAT_SERVICE_URL};
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For  \$proxy_add_x_forwarded_for;
+
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+      add_header Strict-Transport-Security max-age=15768000;
+
+    location / {
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+            proxy_pass http://${CHAT_SERVICE_HOST}:${CHAT_SERVICE_PORT};
+    }
+}EOF

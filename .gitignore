@@ -1,0 +1,8 @@
+/postgres
+.env
+vault
+/nginx/ssl/*
+/nginx/configs/conf.d/*
+/nginx/configs/.htpasswd
+/nginx/ssl/server.crt
+/nginx/ssl/server.key

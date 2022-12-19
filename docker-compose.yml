@@ -1,0 +1,424 @@
+version: "3"
+services:
+  web-srv:
+    container_name: ${APP_NAME}-nginx
+    image: ${APP_NAME}-nginx:latest
+    volumes:
+      - ./nginx/configs/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/configs/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl/:/etc/nginx/ssl/
+      - ../${APP_NAME}-dashboard:/var/www/${APP_NAME}-dashboard
+    ports:
+      - ${WEB_SRV_PORT}:80
+      - ${WEB_SRV_SSL_PORT}:443
+    depends_on:
+      - request-dashboard
+    profiles:
+      - dev
+      - staging
+      - prod
+
+  request-dashboard:
+    container_name: ${APP_NAME}-dashboard
+    image: ${APP_NAME}-node:latest
+    working_dir: /home/node/${APP_NAME}-react
+    volumes:
+      - ../${APP_NAME}-dashboard/:/home/node/${APP_NAME}-react
+    env_file:
+      - .env
+    ports:
+      - ${WEB_APP_PORT}:${PORT}
+    command: npm run build:dev
+    profiles:
+      - dev
+      - staging
+      - prod
+
+  dashboard-api:
+    container_name: ${APP_NAME}-${API_SERVER_NAME}
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/${API_SERVER_NAME}
+    volumes:
+      - ./scripts/:/home/node/scripts
+      - ./../${API_SERVER_NAME}/:/home/node/${API_SERVER_NAME}
+    env_file:
+      - .env
+    ports:
+      - ${API_SERVER_PORT}:${PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: sh ../scripts/run-api.sh
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  user-service:
+    container_name: ${APP_NAME}-${USER_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${USER_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${USER_SERVICE_NAME}-service/:/home/node/app/${USER_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${USER_SERVICE_PORT}:${USER_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  request-service:
+    container_name: ${APP_NAME}-${REQUEST_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${REQUEST_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${REQUEST_SERVICE_NAME}-service/:/home/node/app/${REQUEST_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${REQUEST_SERVICE_PORT}:${REQUEST_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  deal-service:
+    container_name: ${APP_NAME}-${DEAL_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${DEAL_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${DEAL_SERVICE_NAME}-service/:/home/node/app/${DEAL_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${DEAL_SERVICE_PORT}:${DEAL_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  product-service:
+    container_name: ${APP_NAME}-${PRODUCT_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${PRODUCT_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${PRODUCT_SERVICE_NAME}-service/:/home/node/app/${PRODUCT_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${PRODUCT_SERVICE_PORT}:${PRODUCT_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  notification-service:
+    container_name: ${APP_NAME}-${NOTIFICATION_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${NOTIFICATION_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${NOTIFICATION_SERVICE_NAME}-service/:/home/node/app/${NOTIFICATION_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  feedback-service:
+    container_name: ${APP_NAME}-${FEEDBACK_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${FEEDBACK_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${FEEDBACK_SERVICE_NAME}-service/:/home/node/app/${FEEDBACK_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${FEEDBACK_SERVICE_PORT}:${FEEDBACK_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  report-service:
+    container_name: ${APP_NAME}-${REPORT_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${REPORT_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${REPORT_SERVICE_NAME}-service/:/home/node/app/${REPORT_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${REPORT_SERVICE_PORT}:${REPORT_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  auth-service:
+    container_name: ${APP_NAME}-${AUTH_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${AUTH_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${AUTH_SERVICE_NAME}-service/:/home/node/app/${AUTH_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  chat-service:
+    container_name: ${APP_NAME}-${CHAT_SERVICE_NAME}-service
+    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+    working_dir: /home/node/app/${CHAT_SERVICE_NAME}-service
+    volumes:
+      - ./scripts/:/home/node/app/scripts
+      - ./../services/${CHAT_SERVICE_NAME}-service/:/home/node/app/${CHAT_SERVICE_NAME}-service
+    env_file:
+      - .env
+    ports:
+      - ${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}
+    depends_on:
+      - postgres
+      - rabbitmq
+    command: npm run run
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  #  microservice:
+  #    container_name: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}
+  #    image: ${APP_NAME}-${MICROSERVICE_SERVER_NAME}:latest
+  #    working_dir: /home/node/app
+  #    volumes:
+  #      - ./scripts/:/home/node/app/scripts
+  #      - ./../services/user-service/:/home/node/app/user-service
+  #      - ./../services/request-service/:/home/node/app/request-service
+  #      - ./../services/deal-service/:/home/node/app/deal-service
+  #      - ./../services/product-service/:/home/node/app/product-service
+  #      - ./../services/notification-service/:/home/node/app/notification-service
+  #      - ./../services/feedback-service/:/home/node/app/feedback-service
+  #    env_file:
+  #      - .env
+  #    ports:
+  #      - 50051:50051
+  #      - 50052:50052
+  #      - 50053:50053
+  #      - 50054:50054
+  #      - 50055:50055
+  #      - 50056:50056
+  #    depends_on:
+  #      - postgres
+  #      - rabbitmq
+  #    command: sh scripts/init.sh
+  #    logging:
+  #      options:
+  #        max-size: "1m"
+  #        max-file: "3"
+  #    profiles:
+  #      - local
+  #      - dev
+  #      - staging
+  #      - prod
+
+  adminer:
+    image: adminer
+    ports:
+      - ${ADMINER_PORT}:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: ${POSTGRES_HOST}
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  postgres:
+    image: postgres:14.1
+    ports:
+      - ${POSTGRES_PORT}:5432
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD}
+      PGDATA: ${PGDATA}
+    volumes:
+      - ./postgres/data/:/var/lib/postgresql/data
+      - ./postgres/dump/:/docker-entrypoint-initdb.d/
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - ${RABBITMQ_PORT}:5672
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    profiles:
+      - local
+      - dev
+      - staging
+      - prod
+
+  minio-server:
+    container_name: ${MINIO_SERVER_NAME}
+    image: ${MINIO_SERVER_IMAGE}:latest
+    command: server /data --console-address :${MINIO_SERVER_CONSOLE_PORT}
+    env_file:
+      - .env
+    expose:
+      - ${MINIO_SERVER_API_PORT}
+      - ${MINIO_SERVER_CONSOLE_PORT}
+    ports:
+      - ${MINIO_SERVER_API_PORT}:${MINIO_SERVER_API_PORT}
+      - ${MINIO_SERVER_CONSOLE_PORT}:${MINIO_SERVER_CONSOLE_PORT}
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ../minio/minio-storage:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "${MINIO_SERVER_URL_LIVE}"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio-client:
+    container_name: ${MINIO_CLIENT_NAME}
+    image: ${MINIO_CLIENT_IMAGE}:latest
+    ports:
+      - ${MINIO_CLIENT_PORT_IN}:${MINIO_CLIENT_PORT_OUT}
+    depends_on:
+      - ${MINIO_SERVER_NAME}
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add minio http://${MINIO_ENDPOINT}:${MINIO_SERVER_API_PORT} ${MINIO_ACCESSKEY} ${MINIO_SECRETKEY};
+      IFS=','
+      read -a NAME <<< ${MINIO_NAME_BUCKETS};
+      for name in $${NAME[*]};
+      do
+      /usr/bin/mc mb ${MINIO_PATH_BUCKETS}/$${name};
+      /usr/bin/mc policy set public ${MINIO_PATH_BUCKETS}/$${name};
+      done;
+      exit 0;
+      "
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - 1025:1025 # smtp server
+      - 8025:8025 # web ui

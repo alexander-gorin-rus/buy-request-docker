@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e
+PS3=$'\e[01;33m What environment parameters would you like to decrypt? \e[0m'
+options=("prod" "staging" "dev" "local" "Quit")
+BOLD='\033[1m'
+NORMAL='\033[0m'
+YELOW='\033[01;33m'
+RED='\033[1;31m'
+BLUE='\033[0;34m'
+
+if [ ! -f ./vault ]; then
+    echo -e "${RED}ERROR! File ./vault is not found ${NORMAL}"
+    echo -e "${RED} Ask your Project Manager for Ansible valt key and put it to ./vault ${NORMAL}"
+    exit 0
+
+elif ! docker image inspect ${APP_NAME}-ansible:latest &>/dev/null;
+    then
+        echo -e "${YELOW} Building Ansible docker image ${NORMAL}"
+        docker build -t ${APP_NAME}-ansible:latest ./ansible
+fi
+
+decrypt () {
+    echo -e "${BOLD} You choose $REPLY which is $opt ${NORMAL}"
+    echo "Decrypting .env-file"
+    docker run -it --rm -v $(pwd)/:/ansible ${APP_NAME}-ansible:latest decrypt ./.env.$opt.enc --output=.env
+}
+
+select opt in "${options[@]}"
+do
+    case $opt in
+        "prod")
+            decrypt
+            break
+            ;;
+        "staging")
+            decrypt
+            break
+            ;;
+        "dev")
+            decrypt
+            break
+            ;;
+        "local")
+            decrypt
+            break
+            ;;
+        "Quit")
+            break
+            ;;
+        *) echo -e "${RED} invalid option $REPLY ${NORMAL}";;
+    esac
+done
